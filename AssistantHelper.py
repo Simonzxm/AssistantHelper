@@ -4,6 +4,18 @@ import pandas as pd
 import win32com.client as win32
 import os
 
+
+def process_document(name, document, mistakes):
+    try:
+        document.Application.Selection.WholeStory()
+        document.Application.Selection.MoveRight()
+        document.Application.Selection.TypeText('\n')
+        for j in mistakes:
+            document.Application.Selection.InsertFile(j)
+    except Exception as exception:
+        print(f'Error:{name}\n{exception}')
+
+
 # read data.xlsx
 sheet = pd.read_excel('data.xlsx')
 student_data = sheet.to_dict(orient='records')
@@ -26,16 +38,18 @@ for i in student_name:
     if student_mistakes[student_index] != [os.path.join(cwd, '全对.docx')]:
         try:
             doc = word.Documents.Open(os.path.join(cwd, i + '.docx'))
-            doc.Application.Selection.WholeStory()
-            doc.Application.Selection.MoveRight()
-            doc.Application.Selection.TypeText('\n')
-            for j in student_mistakes[student_index]:
-                doc.Application.Selection.InsertFile(j)
+            process_document(i, doc, student_mistakes[student_index])
             doc.Save()
             doc.Close()
         except Exception as e:
-            print(f'Error:{i}\n{e}')
-
+            try:
+                doc = word.Documents.Add()
+                process_document(i, doc, student_mistakes[student_index])
+                doc.SaveAs(os.path.join(cwd, i + '.docx'))
+                doc.Close()
+                print(f'New File Created: {student_name}.docx')
+            except Exception as f:
+                print(f'Error:{i}\n{f}')
     student_index += 1
 word.Quit()
 
